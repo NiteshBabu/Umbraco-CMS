@@ -58,7 +58,14 @@ export class UmbPropertyTypeWorkspaceViewSettingsElement extends UmbLitElement i
 
 		this.consumeContext(UMB_PROPERTY_TYPE_WORKSPACE_CONTEXT, (instance) => {
 			this.#context = instance;
-			this.observe(instance?.data, (data) => (this._data = data), 'observeData');
+			this.observe(
+				instance?.data,
+				(data) => {
+					this._data = data;
+					this.#syncCustomValidationOptions(data?.validation?.regEx);
+				},
+				'observeData',
+			);
 			this.observe(instance?.isNew, (isNew) => (this._isNew = isNew), '_observeIsNew');
 		});
 
@@ -142,6 +149,25 @@ export class UmbPropertyTypeWorkspaceViewSettingsElement extends UmbLitElement i
 		this.updateValue({
 			validation: { ...this._data?.validation, mandatory: this._data?.validation.mandatory ?? false, regEx },
 		});
+	}
+
+	#syncCustomValidationOptions(regEx: string | null | undefined) {
+		const value = regEx ?? '!NOVALIDATION!';
+		const matchFound = this._customValidationOptions.some((option) => option.value === value);
+
+		this._customValidationOptions.forEach((option) => {
+			option.selected = false;
+		});
+
+		if (matchFound) {
+			this._customValidationOptions.find((option) => option.value === value)!.selected = true;
+		} else if (regEx) {
+			this._customValidationOptions[4].selected = true;
+		} else {
+			this._customValidationOptions[0].selected = true;
+		}
+
+		this.requestUpdate('_customValidationOptions');
 	}
 
 	#onValidationRegExChange(event: UUIInputEvent) {
